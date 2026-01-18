@@ -1,23 +1,30 @@
 """
-Basic usage example for RPT-1 embeddings
+Basic usage example for Material Embeddings
 """
 
-from src.embeddings import RPT1Embeddings
+import sys
+from pathlib import Path
+
+# Add parent directory to path
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+
+from src.material_embeddings import MaterialEmbeddings
 
 
 def main():
     print("=" * 60)
-    print("RPT-1 Embeddings - Basic Usage Example")
+    print("Material Embeddings - Basic Usage Example")
     print("=" * 60)
     
-    # Initialize model
-    print("\n1. Initializing RPT-1...")
-    rpt1 = RPT1Embeddings()
+    # Initialize
+    print("\n1. Initializing Material Embeddings...")
+    embedder = MaterialEmbeddings()
     
     # Single embedding
     print("\n2. Generating embedding for a material...")
     material = "Steel Bolt M8x50 DIN 933"
-    embedding = rpt1.encode(material)
+    embedding = embedder.encode(material)
     
     print(f"   Material: {material}")
     print(f"   Embedding shape: {embedding.shape}")
@@ -28,7 +35,7 @@ def main():
     material_a = "Steel Bolt M8x50 DIN 933"
     material_b = "Stainless Steel Bolt M8x50 ISO 4017"
     
-    similarity = rpt1.similarity(material_a, material_b)
+    similarity = embedder.similarity(material_a, material_b)
     
     print(f"   Material A: {material_a}")
     print(f"   Material B: {material_b}")
@@ -42,7 +49,7 @@ def main():
         "Stainless Bolt M10x60"
     ]
     
-    embeddings = rpt1.encode_batch(materials, show_progress=False)
+    embeddings = embedder.encode_batch(materials, show_progress=False)
     
     print(f"   Encoded {len(materials)} materials")
     print(f"   Embeddings shape: {embeddings.shape}")

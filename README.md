@@ -1,130 +1,83 @@
-# SAP RPT-1 Embeddings Tutorial
+# SAP Materials Embeddings Tutorial
 
-A practical guide to generating and working with 768-dimensional embeddings from SAP's Relational Pre-Trained Transformer (RPT-1-OSS).
+A practical guide to generating and working with embeddings for SAP material master data using Sentence Transformers.
 
 ## 🎯 What This Repository Provides
 
-- **Working code examples** for generating embeddings with RPT-1-OSS
-- **Practical use cases**: duplicate detection, similarity search, classification
+- **Text embeddings** for SAP material descriptions
+- **Semantic similarity** search and duplicate detection
+- **Working code examples** with real SAP use cases
 - **Jupyter notebooks** with step-by-step explanations
-- **Reusable utilities** for SAP material and supplier embeddings
-- **Sample datasets** for experimentation
+- **Reusable utilities** for material similarity analysis
 
 ## 🚀 Quick Start
 
 ### Installation
 ```bash
-git clone https://github.com/yourusername/sap-rpt1-embeddings-tutorial.git
-cd sap-rpt1-embeddings-tutorial
+git clone https://github.com/AntonioLeites/materials-sap-embeddings.git
+cd materials-sap-embeddings
+
+# Create environment
+python3.11 -m venv ~/envs/materials-embeddings
+source ~/envs/materials-embeddings/bin/activate
+
+# Install dependencies
 pip install -r requirements.txt
 ```
 
 ### Basic Usage
 ```python
-from src.embeddings import RPT1Embeddings
+from src.embeddings import MaterialEmbeddings
 
 # Initialize
-rpt1 = RPT1Embeddings()
+embedder = MaterialEmbeddings()
 
 # Generate embedding
-embedding = rpt1.encode("Steel Bolt M8x50 DIN 933")
+embedding = embedder.encode("Steel Bolt M8x50 DIN 933")
 print(f"Embedding shape: {embedding.shape}")  # (768,)
 
 # Compare materials
-similarity = rpt1.similarity(
+similarity = embedder.similarity(
     "Steel Bolt M8x50 DIN 933",
     "Stainless Steel Bolt M8x50 ISO 4017"
 )
 print(f"Similarity: {similarity:.4f}")  # 0.8923
 ```
 
-## 📚 Notebooks
+## 📚 Use Cases
 
-1. [**Basic Embeddings**](notebooks/01_basic_embeddings.ipynb) - Generate your first embeddings
-2. [**Similarity Comparison**](notebooks/02_similarity_comparison.ipynb) - Compare materials semantically
-3. [**Duplicate Detection**](notebooks/03_duplicate_detection.ipynb) - Find duplicate materials at scale
-4. [**Intermediate Layers**](notebooks/04_intermediate_layers.ipynb) - Access hidden representations
-5. [**Fine-Tuning**](notebooks/05_fine_tuning.ipynb) - Adapt RPT-1 to your data
+### 1. Duplicate Detection
+Find materials with similar descriptions that might be duplicates.
 
-## 🔧 Use Cases
+### 2. Material Search
+Search for materials by semantic similarity, not just exact matches.
 
-### Duplicate Detection
-```python
-from src.similarity import DuplicateDetector
+### 3. Classification Support
+Generate embeddings as features for ML models.
 
-detector = DuplicateDetector(threshold=0.85)
-duplicates = detector.find_duplicates(material_catalog)
-```
-
-### Supplier Matching
-```python
-from examples.supplier_matching import recommend_suppliers
-
-suppliers = recommend_suppliers(
-    material="Steel Bolt M8x50",
-    top_k=5
-)
-```
-
-### Material Classification
-```python
-from examples.material_classification import classify_material
-
-material_group = classify_material(
-    "Hexagonal Bolt Stainless Steel M8"
-)
-```
-
-## 📊 Sample Data
-
-The repository includes sample SAP-like data:
-- `data/sample_materials.csv` - 1000 material descriptions
-- `data/sample_suppliers.csv` - 100 supplier profiles
+### 4. Supplier Matching
+Find materials typically supplied by similar vendors.
 
 ## 🏗️ Architecture
-```
-User Input (Material Description)
-        ↓
-   Tokenization
-        ↓
-  RPT-1-OSS Model
-        ↓
-  768-D Embedding
-        ↓
-  Downstream Tasks
-  (Similarity, Classification, etc.)
-```
 
-See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for details.
+This project uses **Sentence Transformers** for generating embeddings:
+- Model: `sentence-transformers/all-mpnet-base-v2`
+- Embedding dimension: 768
+- Optimized for semantic similarity
+
+Unlike SAP RPT-1-OSS (which is for tabular classification/regression),
+this project focuses on **text embeddings** for material descriptions.
 
 ## 📖 Documentation
 
+- [Examples](examples/) - Runnable Python scripts
+- [Notebooks](notebooks/) - Interactive tutorials
 - [API Reference](docs/API.md)
-- [Examples](docs/EXAMPLES.md)
-- [Architecture](docs/ARCHITECTURE.md)
 
-## 🧪 Testing
-```bash
-pytest tests/
-```
+## 🔗 Related Projects
 
-## 🤝 Contributing
-
-Contributions welcome! Please read our contributing guidelines.
+- [rpt-1-sap-playground](https://github.com/yourusername/rpt-1-sap-playground) - SAP RPT-1-OSS for tabular prediction (stockout use case)
 
 ## 📄 License
 
 MIT License - see [LICENSE](LICENSE) for details.
-
-## 🔗 Related Articles
-
-- [How to Generate Embeddings with SAP RPT-1-OSS](link-to-linkedin-post)
-- [From Business Rules to Neural Embeddings in SAP S/4HANA](link-to-linkedin-article)
-
-## 💡 Questions?
-
-Open an issue or reach out on LinkedIn.
-
-## ⭐ Star This Repo
-
-If you find this useful, please star the repository!

@@ -1,4 +1,4 @@
-# SAP Materials Embeddings Tutorial
+# SAP Materials Embeddings
 
 A practical guide to generating and working with embeddings for SAP material master data using Sentence Transformers.
 

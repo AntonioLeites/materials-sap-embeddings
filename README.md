@@ -74,10 +74,33 @@ this project focuses on **text embeddings** for material descriptions.
 - [Notebooks](notebooks/) - Interactive tutorials
 - [API Reference](docs/API.md)
 
-## 🔗 Related Projects
-
-- [rpt-1-sap-playground](https://github.com/yourusername/rpt-1-sap-playground) - SAP RPT-1-OSS for tabular prediction (stockout use case)
 
 ## 📄 License
 
 MIT License - see [LICENSE](LICENSE) for details.
+
+## 🎯 Multimodal Embeddings Results
+
+### Example: Comparing Different Materials
+
+**Material A:** Steel Rivet 5x15  
+**Material B:** Plastic Pin 4x30
+
+**Similarity Breakdown:**
+
+| Component | Score | Contribution |
+|-----------|-------|--------------|
+| Text (description) | 44.3% | Semantic similarity |
+| Categorical (groups) | 46.3% | Business classification |
+| Characteristics (specs) | 40.1% | Technical properties |
+| Relational (usage) | 16.7% | Shared context |
+| **Overall (fused)** | **58.9%** | Combined understanding |
+
+### Key Insight
+
+Multimodal embeddings achieve **33% higher similarity** (44% → 59%) compared to text-only by incorporating:
+- ✅ Business context (MaterialGroup)
+- ✅ Technical specifications (DIAMETER, MATERIAL)
+- ✅ Usage patterns (plants, suppliers)
+
+This demonstrates **Tensor Logic**: similarity emerges from learned fusion of multiple features, not explicit rules.

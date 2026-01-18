@@ -24,6 +24,8 @@ wheels/
 venv/
 env/
 ENV/
+rpt1-embeddings/
+materials-embeddings/
 
 # Jupyter Notebook
 .ipynb_checkpoints
@@ -39,14 +41,27 @@ ENV/
 .DS_Store
 Thumbs.db
 
-# Model cache
-models/
-.cache/
+# Credentials and secrets
+.env
+*.env
+.env.local
+.env.*.local
+config/secrets.json
+**/secrets.yaml
 
-# Data (optional - decide si quieres versionar los datos)
+# HuggingFace cache (opcional)
+.cache/
+models/
+
+# Test files (opcional, decide si quieres versionarlos)
+test_*.py
+debug_*.py
+
+# Data (decide si quieres versionarla)
 # data/*.csv
 # data/*.pkl
 
 # Embeddings cache
 *.pkl
 embeddings_cache/
+EOF

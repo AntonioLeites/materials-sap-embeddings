@@ -1,0 +1,287 @@
+"""
+Multimodal Material Embeddings
+Combines text, categorical, characteristics, and relational features
+"""
+
+import torch
+import torch.nn as nn
+import numpy as np
+from typing import Dict, List, Optional
+
+from sentence_transformers import SentenceTransformer
+from ..encoders.categorical_encoder import CategoricalEncoder
+from ..encoders.characteristics_encoder import CharacteristicsEncoder
+from ..encoders.relational_encoder import RelationalEncoder
+
+
+class MultimodalMaterialEmbeddings:
+    """
+    Generate multimodal embeddings for SAP materials
+    
+    Architecture:
+        Text (description) → 768-d
+        Categorical (MATKL, MTART) → ~112-d
+        Characteristics (DIAMETER, LENGTH) → 192-d
+        Relational (plants, suppliers) → 128-d
+        ↓ Fusion
+        Final embedding → 768-d (configurable)
+    """
+    
+    def __init__(
+        self,
+        text_model: str = "sentence-transformers/all-mpnet-base-v2",
+        output_dim: int = 768,
+        use_fusion: bool = True
+    ):
+        """
+        Initialize multimodal embeddings
+        
+        Args:
+            text_model: Sentence transformer model name
+            output_dim: Output embedding dimension
+            use_fusion: If True, fuse features; if False, concatenate
+        """
+        print(f"Initializing Multimodal Material Embeddings...")
+        print(f"  Text model: {text_model}")
+        print(f"  Output dimension: {output_dim}")
+        
+        # Text encoder
+        print("  Loading text encoder...")
+        self.text_encoder = SentenceTransformer(text_model)
+        self.text_dim = 768  # All-mpnet-base-v2 dimension
+        
+        # Categorical encoder
+        print("  Initializing categorical encoder...")
+        self.categorical_encoder = CategoricalEncoder()
+        self.cat_dim = self.categorical_encoder.get_embedding_dim()
+        
+        # Characteristics encoder
+        print("  Initializing characteristics encoder...")
+        self.characteristics_encoder = CharacteristicsEncoder()
+        self.char_dim = self.characteristics_encoder.get_embedding_dim()
+        
+        # Relational encoder
+        print("  Initializing relational encoder...")
+        self.relational_encoder = RelationalEncoder(embed_dim=128)
+        self.rel_dim = self.relational_encoder.get_embedding_dim()
+        
+        # Total input dimension
+        self.total_dim = self.text_dim + self.cat_dim + self.char_dim + self.rel_dim
+        
+        print(f"  Dimension breakdown:")
+        print(f"    - Text: {self.text_dim}")
+        print(f"    - Categorical: {self.cat_dim}")
+        print(f"    - Characteristics: {self.char_dim}")
+        print(f"    - Relational: {self.rel_dim}")
+        print(f"    - Total: {self.total_dim}")
+        
+        # Fusion layer
+        self.use_fusion = use_fusion
+        if use_fusion:
+            self.fusion_layer = nn.Sequential(
+                nn.Linear(self.total_dim, output_dim * 2),
+                nn.LayerNorm(output_dim * 2),
+                nn.ReLU(),
+                nn.Dropout(0.1),
+                nn.Linear(output_dim * 2, output_dim)
+            )
+            self.output_dim = output_dim
+        else:
+            # No fusion, just concatenate
+            self.output_dim = self.total_dim
+        
+        print(f"✓ Multimodal embeddings initialized (output: {self.output_dim}-d)")
+    
+    def encode_text(self, description: str) -> np.ndarray:
+        """Encode material description"""
+        return self.text_encoder.encode(
+            description,
+            normalize_embeddings=True,
+            show_progress_bar=False
+        )
+    
+    def encode_multimodal(
+        self,
+        material_data: Dict,
+        include_text: bool = True,
+        include_categorical: bool = True,
+        include_characteristics: bool = True,
+        include_relational: bool = True
+    ) -> np.ndarray:
+        """
+        Generate complete multimodal embedding
+        
+        Args:
+            material_data: Dictionary with material information:
+                - MAKTX: Material description (str)
+                - MATKL: Material group (str)
+                - MTART: Material type (str)
+                - characteristics: Dict of technical specs
+                - plants: List of plant codes
+                - suppliers: List of supplier codes
+                - usage_frequency: Usage frequency
+            include_*: Flags to include/exclude components
+        
+        Returns:
+            Multimodal embedding vector
+        """
+        embeddings = []
+        
+        # 1. Text embedding
+        if include_text and 'MAKTX' in material_data:
+            text_emb = self.encode_text(material_data['MAKTX'])
+            embeddings.append(text_emb)
+        elif include_text:
+            # Zero padding if text missing
+            embeddings.append(np.zeros(self.text_dim))
+        
+        # 2. Categorical embedding
+        if include_categorical:
+            cat_emb = self.categorical_encoder.encode(material_data)
+            embeddings.append(cat_emb)
+        
+        # 3. Characteristics embedding
+        if include_characteristics:
+            characteristics = material_data.get('characteristics', {})
+            char_emb = self.characteristics_encoder.encode(characteristics)
+            embeddings.append(char_emb)
+        
+        # 4. Relational embedding
+        if include_relational:
+            rel_emb = self.relational_encoder.encode(material_data)
+            embeddings.append(rel_emb)
+        
+        # Concatenate all embeddings
+        combined = np.concatenate(embeddings)
+        
+        # Check if using partial features
+        using_all_features = (
+            include_text and 
+            include_categorical and 
+            include_characteristics and 
+            include_relational
+        )
+        
+        # Apply fusion only if using all features
+        if self.use_fusion and using_all_features:
+            combined_tensor = torch.tensor(combined, dtype=torch.float32)
+            with torch.no_grad():
+                fused = self.fusion_layer(combined_tensor).numpy()
+            
+            # Normalize
+            fused = fused / (np.linalg.norm(fused) + 1e-8)
+            return fused
+        else:
+            # Just normalize concatenated features (no fusion for partial embeddings)
+            normalized = combined / (np.linalg.norm(combined) + 1e-8)
+            
+            # If fusion is enabled but we're using partial features,
+            # pad to output_dim for consistency
+            if self.use_fusion and len(normalized) < self.output_dim:
+                padded = np.zeros(self.output_dim)
+                padded[:len(normalized)] = normalized
+                return padded
+        
+        return normalized
+    
+    def encode_batch(
+        self,
+        materials_data: List[Dict],
+        show_progress: bool = True
+    ) -> np.ndarray:
+        """
+        Encode multiple materials
+        
+        Args:
+            materials_data: List of material dictionaries
+            show_progress: Show progress bar
+        
+        Returns:
+            Array of shape (n_materials, output_dim)
+        """
+        from tqdm import tqdm
+        
+        embeddings = []
+        iterator = tqdm(materials_data) if show_progress else materials_data
+        
+        for material in iterator:
+            emb = self.encode_multimodal(material)
+            embeddings.append(emb)
+        
+        return np.array(embeddings)
+    
+    def similarity(
+        self,
+        material1_data: Dict,
+        material2_data: Dict
+    ) -> float:
+        """
+        Compute similarity between two materials
+        
+        Args:
+            material1_data: First material data
+            material2_data: Second material data
+        
+        Returns:
+            Cosine similarity score
+        """
+        emb1 = self.encode_multimodal(material1_data)
+        emb2 = self.encode_multimodal(material2_data)
+        
+        return float(np.dot(emb1, emb2))
+    
+    def explain_similarity(
+        self,
+        material1_data: Dict,
+        material2_data: Dict
+    ) -> Dict[str, float]:
+        """
+        Explain similarity by component
+        
+        Returns breakdown of similarity by modality
+        """
+        similarities = {}
+        
+        # Text similarity
+        if 'MAKTX' in material1_data and 'MAKTX' in material2_data:
+            text_emb1 = self.encode_text(material1_data['MAKTX'])
+            text_emb2 = self.encode_text(material2_data['MAKTX'])
+            similarities['text'] = float(np.dot(text_emb1, text_emb2))
+        
+        # Categorical similarity
+        cat_emb1 = self.categorical_encoder.encode(material1_data)
+        cat_emb2 = self.categorical_encoder.encode(material2_data)
+        if np.linalg.norm(cat_emb1) > 0 and np.linalg.norm(cat_emb2) > 0:
+            cat_emb1_norm = cat_emb1 / np.linalg.norm(cat_emb1)
+            cat_emb2_norm = cat_emb2 / np.linalg.norm(cat_emb2)
+            similarities['categorical'] = float(np.dot(cat_emb1_norm, cat_emb2_norm))
+        
+        # Characteristics similarity
+        char1 = material1_data.get('characteristics', {})
+        char2 = material2_data.get('characteristics', {})
+        char_emb1 = self.characteristics_encoder.encode(char1)
+        char_emb2 = self.characteristics_encoder.encode(char2)
+        if np.linalg.norm(char_emb1) > 0 and np.linalg.norm(char_emb2) > 0:
+            char_emb1_norm = char_emb1 / np.linalg.norm(char_emb1)
+            char_emb2_norm = char_emb2 / np.linalg.norm(char_emb2)
+            similarities['characteristics'] = float(np.dot(char_emb1_norm, char_emb2_norm))
+        
+        # Relational similarity
+        similarities['relational'] = self.relational_encoder.get_relational_similarity(
+            material1_data, material2_data
+        )
+        
+        # Overall
+        similarities['overall'] = self.similarity(material1_data, material2_data)
+        
+        return similarities
+    
+    def update_relational_knowledge(self, materials_data: List[Dict]):
+        """
+        Update relational encoder's knowledge base
+        Call this with your full material catalog to improve relational features
+        """
+        print(f"Updating relational knowledge with {len(materials_data)} materials...")
+        for material in materials_data:
+            self.relational_encoder.update_knowledge(material)
+        print("✓ Knowledge updated")

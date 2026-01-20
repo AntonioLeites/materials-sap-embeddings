@@ -277,11 +277,13 @@ materials-sap-embeddings/
 ### Models Used
 
 **Text Encoder:**
+
 - Model: `sentence-transformers/all-mpnet-base-v2`
 - Dimension: 768
 - Pre-trained on semantic similarity
 
 **Multimodal Components:**
+
 - Categorical: Learned embeddings (16-128d per field)
 - Characteristics: Learned embeddings (16-32d per characteristic)
 - Relational: Statistical features (128-d)
@@ -294,6 +296,44 @@ materials-sap-embeddings/
 - Similarity computation: <1ms per pair
 - Batch processing: ~600 materials/minute
 
+### Computational Efficiency
+
+**Traditional pairwise comparison (for n materials):**
+
+- Comparisons needed: n × (n-1) / 2
+- Per comparison: 10+ field comparisons + custom logic
+- Example (10,000 materials):
+  - 49,995,000 pairs × 10 fields = ~500M operations
+  - Estimated time: Hours to days
+  - Memory: O(n²) similarity matrix
+
+**Embedding approach:**
+
+- Embedding generation: O(n) - one pass
+- Similarity search: O(n) with vector index (FAISS)
+- Example (10,000 materials):
+  - Embed: 10,000 × 100ms = 16 minutes (one-time)
+  - Search: <100ms per query
+  - Memory: O(n) - store embeddings only
+
+**Scalability:**
+
+| Materials | Traditional | Embeddings |
+|-----------|-------------|------------|
+| 1,000 | ~5 minutes | ~2 minutes |
+| 10,000 | ~8 hours | ~16 minutes |
+| 100,000 | ~33 days | ~2.5 hours |
+| 1,000,000 | Impractical | ~1 day |
+
+**Key advantage:** Embeddings are computed once and reusable for:
+- Duplicate detection
+- Similarity search
+- Clustering
+- Classification features
+- Recommendation systems
+```
+
+---
 ---
 
 ## 🔮 Future Development
@@ -333,13 +373,7 @@ MIT License - see [LICENSE](LICENSE) for details.
 - **GitHub**: [@AntonioLeites](https://github.com/AntonioLeites)
 - **LinkedIn**: [Antonio Leites](https://linkedin.com/in/antonioleites)
 
----
 
-## ⭐ Acknowledgments
-
-- **Sentence Transformers**: Reimers & Gurevych (2019)
-- **SAP Community**: Master data insights
-- **Anthropic Claude**: Development assistance
 
 ---
 

@@ -250,7 +250,9 @@ jupyter notebook
 ---
 
 ## 📁 Project Structure
+
 ```
+
 materials-sap-embeddings/
 ├── src/
 │   ├── embeddings/
@@ -326,14 +328,13 @@ materials-sap-embeddings/
 | 1,000,000 | Impractical | ~1 day |
 
 **Key advantage:** Embeddings are computed once and reusable for:
+
 - Duplicate detection
 - Similarity search
 - Clustering
 - Classification features
 - Recommendation systems
-```
-
----
+  
 ---
 
 ## 🔮 Future Development

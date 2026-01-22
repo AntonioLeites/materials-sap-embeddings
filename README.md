@@ -337,6 +337,45 @@ materials-sap-embeddings/
   
 ---
 
+## ❓ FAQ
+
+### How do you handle discrete non-ordinal features like COLOR or MATERIAL_TYPE?
+
+We use **learned embeddings** instead of one-hot encoding:
+
+1. **Categorical Encoder** (MaterialGroup, MaterialType, Unit):
+   - Each category gets a dense vector (16-128d based on vocabulary size)
+   - Model learns semantic relationships: BOLTS ≈ SCREWS ≠ ELECTRONICS
+   - Handles unknown values with special `<UNK>` token
+
+2. **Characteristics Encoder** (DIAMETER, LENGTH, MATERIAL, COATING):
+   - Values normalized first: "8mm", "M8", "8 mm" → "8MM"
+   - Each characteristic has its own embedding space
+   - Example: DIAMETER vocabulary: M6, M8, M10... → 32-d embeddings
+
+3. **Fusion Layer learns optimal weighting**:
+   - Neural network automatically learns feature importance
+   - No manual tuning needed
+   - Adapts to patterns in your specific data
+
+See implementation: [src/encoders/](src/encoders/)
+
+### Why not just use one-hot encoding?
+
+One-hot treats all categories as equally different:
+
+- BOLTS vs SCREWS: distance = √2
+- BOLTS vs ELECTRONICS: distance = √2 (same!)
+
+Learned embeddings capture semantic similarity:
+
+- BOLTS vs SCREWS: distance ≈ 0.3 (similar fasteners)
+- BOLTS vs ELECTRONICS: distance ≈ 0.9 (very different)
+
+This improves duplicate detection for materials with similar function but different categories.
+
+---
+
 ## 🔮 Future Development
 
 ### Planned

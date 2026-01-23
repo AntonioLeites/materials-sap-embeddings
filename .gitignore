@@ -64,4 +64,4 @@ debug_*.py
 # Embeddings cache
 *.pkl
 embeddings_cache/
-EOF
+EOFREADME copia.md

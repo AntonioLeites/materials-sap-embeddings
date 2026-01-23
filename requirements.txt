@@ -21,6 +21,9 @@ pytest>=7.4.0
 # Utilities
 tqdm>=4.65.0
 
+sap-rpt-1-oss @ git+https://github.com/SAP-samples/sap-rpt-1-oss
+huggingface-hub>=0.20.0
+
 # Optional: For SAP connections (commented out for now)
 # pyrfc>=2.0.0
 # requests>=2.31.0

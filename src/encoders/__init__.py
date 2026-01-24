@@ -11,3 +11,11 @@ __all__ = [
     'CharacteristicsEncoder',
     'RelationalEncoder'
 ]
+
+# SAP RPT-1 encoder (optional dependency)
+try:
+    from .sap_rpt1_encoder import SAPRPT1Encoder
+    __all__.append('SAPRPT1Encoder')
+except ImportError:
+    # RPT-1 not installed, skip
+    pass
